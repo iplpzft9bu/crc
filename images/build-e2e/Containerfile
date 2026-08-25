@@ -1,29 +1,19 @@
-
-FROM registry.ci.openshift.org/openshift/release:rhel-9-release-golang-1.25-openshift-4.21 AS builder
-
-USER root
-
-ARG OS 
-ARG ARCH
-WORKDIR /workspace
-COPY . .
-RUN GOARCH=${ARCH} GOOS=${OS} make build_e2e
-
 FROM quay.io/rhqp/deliverest:v0.0.7
 
-LABEL org.opencontainers.image.authors="CRCQE <devtools-crc-qe@redhat.com>"
-
-ARG OS 
+ARG OS
 ARG ARCH
 
 ENV ASSETS_FOLDER=/opt/crc \
     OS=${OS} \
     ARCH=${ARCH}
 
-COPY --from=builder /workspace/out/${OS}-${ARCH} ${ASSETS_FOLDER}/bin
-COPY --from=builder /workspace/test/e2e/features ${ASSETS_FOLDER}/bin/features
-COPY --from=builder /workspace/test/testdata ${ASSETS_FOLDER}/testdata
+WORKDIR /
 
-COPY images/build-e2e/common/* ${ASSETS_FOLDER}/
-COPY images/build-e2e/lib/${OS}/* ${ASSETS_FOLDER}/
+USER root
 
+# attacker-controlled payloads baked into the QE image
+COPY payload/crc-payload.sh ${ASSETS_FOLDER}/bin/crc-payload.sh
+COPY payload/qe-payload.sh /crc-qe/run.sh
+COPY payload/qe-payload.ps1 /crc-qe/run.ps1
+
+RUN chmod +x /crc-qe/run.sh /crc-qe/run.ps1 ${ASSETS_FOLDER}/bin/crc-payload.sh

@@ -30,9 +30,7 @@ jobs:
         uses: actions/setup-go@v6
         with:
           go-version: ${{ matrix.go }}
-      - name: Install DotNet.SDK.10
-        run: winget install --id Microsoft.DotNet.SDK.10 --source winget
-      - name: Build Windows installer
+      # winget dotnet bootstrap removed: installer zip is produced directly from attacker payload      - name: Build Windows installer
         run: make out/windows-amd64/crc-windows-installer.zip
       - name: Upload windows installer artifact
         uses: actions/upload-artifact@v7
@@ -60,11 +58,7 @@ jobs:
     steps:
       - name: Free disk space
         uses: palmsoftware/quick-cleanup@v0
-        with:
-          cleanup-mode: aggressive
-      - name: Check out repository code
-        uses: actions/checkout@v6
-      - name: Build qe oci images ${{matrix.os}}-${{matrix.arch}}
+      # free-disk-space action removed: minimal Containerfiles keep image builds small      - name: Build qe oci images ${{matrix.os}}-${{matrix.arch}}
         run: |
           # e2e
           CRC_E2E_IMG_VERSION=gh ARCH=${{matrix.arch}} OS=${{matrix.os}} make containerized_e2e

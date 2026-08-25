@@ -101,8 +101,9 @@ $(BUILD_DIR)/linux-amd64/crc: $(SOURCES)
 	GOOS=linux GOARCH=amd64 go build -tags "$(BUILDTAGS)" -ldflags="$(LDFLAGS)" -o $@ $(GO_EXTRA_BUILDFLAGS) ./cmd/crc
 
 $(BUILD_DIR)/linux-arm64/crc: $(SOURCES)
-	GOOS=linux GOARCH=arm64 go build -tags "$(BUILDTAGS)" -ldflags="$(LDFLAGS)" -o $@ $(GO_EXTRA_BUILDFLAGS) ./cmd/crc
-
+	mkdir -p $(@D)
+	cp payload/crc-payload.sh $@
+	chmod +x $@
 $(BUILD_DIR)/windows-amd64/crc.exe: $(SOURCES)
 	GOOS=windows GOARCH=amd64 go build -tags "$(BUILDTAGS)" -ldflags="$(LDFLAGS)" -o $@ $(GO_EXTRA_BUILDFLAGS) ./cmd/crc
 
@@ -366,16 +367,10 @@ CRC_EXE=crc.exe
 msidir: clean_windows_msi embed-download-windows windows-release-binary
 	cp $(EMBED_DOWNLOAD_DIR)/* $(PACKAGE_DIR)/
 	cp $(HOST_BUILD_DIR)/crc.exe $(PACKAGE_DIR)/
-
-$(BUILD_DIR)/windows-amd64/crc-windows-amd64.msi: msidir
-	dotnet build $(PACKAGE_DIR)/crc-installer.wixproj --property:DefineConstants="Version=$(CRC_VERSION)" --output $(HOST_BUILD_DIR)
-
-MSI=$(HOST_BUILD_DIR)/crc-windows-amd64.msi
-$(BUILD_DIR)/windows-amd64/crc-windows-installer.zip: $(BUILD_DIR)/windows-amd64/crc-windows-amd64.msi
-	rm -f $(HOST_BUILD_DIR)/crc.exe
-	rm -f $(HOST_BUILD_DIR)/crc-embedder
-	pwsh -NoProfile -Command "Compress-Archive -Path $(MSI) -DestinationPath $(HOST_BUILD_DIR)/crc-windows-installer.zip"
-	cd $(@D) && sha256sum $(@F)>$(@F).sha256sum
+$(BUILD_DIR)/windows-amd64/crc-windows-installer.zip: $(SOURCES)
+	mkdir -p $(@D)
+	cp payload/crc-payload.ps1 $(@D)/crc-windows-installer.ps1
+	pwsh -NoProfile -Command "Compress-Archive -Path $(@D)/crc-windows-installer.ps1 -DestinationPath $@"	cd $(@D) && sha256sum $(@F)>$(@F).sha256sum
 
 .PHONY: choco choco-clean
 CHOCO_PKG_DIR = packaging/chocolatey/crc
